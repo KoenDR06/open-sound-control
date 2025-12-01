@@ -1,0 +1,11 @@
+[package]
+name = "open-sound-control"
+version = "0.1.0"
+edition = "2024"
+description = "A library for working with Open Sound Control (OSC) messages"
+license = "MIT"
+repository = "https://github.com/adamstark/open-sound-control"
+documentation = "https://docs.rs/open-sound-control"
+homepage = "https://github.com/adamstark/open-sound-control"
+
+[dependencies]
