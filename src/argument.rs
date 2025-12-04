@@ -10,7 +10,7 @@ pub enum OscArgumentParseError {
 /// Represents an OSC argument with a given type
 /// 17 types are recognised: 
 /// - 4 "main" argument types
-/// - 13 "nonstandard" types
+/// - 13 "nonstandard" types (often not used by other OSC implementations)
 #[derive(Debug, PartialEq)]
 pub enum OscArgument {
 
@@ -20,7 +20,7 @@ pub enum OscArgument {
     String(String), /* String */
     Blob(Vec<u8>), /* A number of 8-bit bytes of arbitrary binary data */
 
-    /** NONSTANDARD TYPES **/
+    /** NONSTANDARD TYPES - MANY OSC IMPLEMENTATIONS DON'T IMPLEMENT THESE (BUT WE DO, OF COURSE) **/
     Int64(i64), /* 64 bit big-endian two’s complement integer */
     TimeTag(i64), /* OSC-timetag */
     Float64(f64), /* 64 bit (“double”) IEEE 754 floating point number */
