@@ -128,14 +128,14 @@ mod tests {
     //------------------------------------------------------------------
     #[test]
     fn test_convert_message_to_bytes1() {
-      let m = OscMessage {
+      let m1 = OscMessage {
         address: String::from("/oscillator/4/frequency"),
         arguments: vec![
           OscArgument::Float32(440.0)
         ]
       };
 
-      let bytes = m.to_bytes();
+      let mut bytes = m1.to_bytes();
 
       let expected_bytes: Vec<u8> = vec![
           0x2f, 0x6f, 0x73, 0x63,
@@ -149,12 +149,20 @@ mod tests {
       ];
 
       assert_eq!(bytes, expected_bytes);
+
+      let result = OscMessage::from_bytes(&mut bytes);
+      assert!(result.is_ok(), "Expected OscMessage ok, got: {:?}", result.err());
+
+      let m2 = result.unwrap();
+      assert_eq!(m2.address, "/oscillator/4/frequency");
+      assert_eq!(m2.arguments.len(), 1);
+      assert_eq!(m2.arguments.get(0), Some(&OscArgument::Float32(440.0)));
     }
 
     //------------------------------------------------------------------
     #[test]
     fn test_convert_message_to_bytes2() {
-      let m = OscMessage {
+      let m1 = OscMessage {
         address: String::from("/foo"),
         arguments: vec![
           OscArgument::Int32(1000),
@@ -165,7 +173,7 @@ mod tests {
         ]
       };
 
-      let bytes = m.to_bytes();
+      let mut bytes = m1.to_bytes();
 
       let expected_bytes: Vec<u8> = vec![
           0x2f, 0x66, 0x6f, 0x6f,
@@ -181,5 +189,17 @@ mod tests {
       ];
 
       assert_eq!(bytes, expected_bytes);
+
+      let result = OscMessage::from_bytes(&mut bytes);
+      assert!(result.is_ok(), "Expected OscMessage ok, got: {:?}", result.err());
+
+      let m2 = result.unwrap();
+      assert_eq!(m2.address, "/foo");
+      assert_eq!(m2.arguments.len(), 5);
+      assert_eq!(m2.arguments.get(0), Some(&OscArgument::Int32(1000)));
+      assert_eq!(m2.arguments.get(1), Some(&OscArgument::Int32(-1)));
+      assert_eq!(m2.arguments.get(2), Some(&OscArgument::String("hello".to_string())));
+      assert_eq!(m2.arguments.get(3), Some(&OscArgument::Float32(1.234)));
+      assert_eq!(m2.arguments.get(4), Some(&OscArgument::Float32(5.678)));
     }
 }
