@@ -83,7 +83,6 @@ impl OscMessage {
   fn arguments_in_bytes(&self) -> Vec<u8> {
     return self.arguments.iter().flat_map(|a| a.to_bytes()).collect();
   }
-  //pub fn from_bytes(bytes: &[u8]) -> Result<Self, OscParseError> { ... }
 }
 
 //==================================================================
