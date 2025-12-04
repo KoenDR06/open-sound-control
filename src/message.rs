@@ -3,8 +3,9 @@ use crate::helpers;
 
 /// Represents an OSC message
 pub struct OscMessage {
-    address: String,
-    arguments: Vec<OscArgument>
+    pub address: String,
+    pub arguments: Vec<OscArgument>
+}
 
 #[derive(Debug)]
 pub enum OscMessageParseError {
