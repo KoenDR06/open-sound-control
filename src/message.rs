@@ -17,6 +17,46 @@ impl OscMessage {
         }
   }
 
+  /// Construct an OscMessage from a sequence of bytes
+  pub fn from_bytes(bytes: &[u8]) -> Result<Self, OscMessageParseError> {
+
+    if bytes.is_empty() {
+      return Err(OscMessageParseError::NotEnoughData);
+    }
+
+    // Extract Address Pattern
+    let address_pattern_null_pos = bytes.iter().position(|&b| b == 0).ok_or(OscMessageParseError::InvalidFormat)?;
+    let address_pattern_bytes = &bytes[0..address_pattern_null_pos];
+    let address_pattern = String::from_utf8(address_pattern_bytes.to_vec()).map_err(|_| OscMessageParseError::InvalidString)?;
+    
+    // check address pattern starts with '/'
+    if ! address_pattern.starts_with("/") {
+      return Err(OscMessageParseError::InvalidString);
+    }
+
+    // Extract Type Tag String
+    let comma_pos = address_pattern_null_pos + bytes[address_pattern_null_pos..].iter().position(|&b| b == 0x2c).ok_or(OscMessageParseError::InvalidFormat)?;
+    let type_tag_null_pos = comma_pos + bytes[comma_pos..].iter().position(|&b| b == 0).ok_or(OscMessageParseError::InvalidFormat)?;
+    let type_tag_bytes = &bytes[comma_pos..type_tag_null_pos];
+    let type_tag_string = String::from_utf8(type_tag_bytes.to_vec()).map_err(|_| OscMessageParseError::InvalidString)?;
+
+    let mut arguments = Vec::<OscArgument>::new();
+
+    // Process arguments
+    let mut arguments_index: usize = (type_tag_null_pos + 1 + 3) & !3;
+
+    for tag in type_tag_string[1..].chars() {
+      let result = OscArgument::from_bytes(bytes, &mut arguments_index, tag);
+      if result.is_err() {
+        return Err(OscMessageParseError::CouldNotParseArguments);
+      }
+      let argument = result.unwrap();
+      arguments.push (argument);
+    }
+
+    Ok(OscMessage { address: address_pattern, arguments })
+  }
+
   /// Convert an OscMessage to a vector of bytes
   pub fn to_bytes(&self) -> Vec<u8> {
     [
