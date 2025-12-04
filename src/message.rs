@@ -5,6 +5,13 @@ use crate::helpers;
 pub struct OscMessage {
     address: String,
     arguments: Vec<OscArgument>
+
+#[derive(Debug)]
+pub enum OscMessageParseError {
+  NotEnoughData,
+  InvalidFormat,
+  InvalidString,
+  CouldNotParseArguments
 }
 
 impl OscMessage {
