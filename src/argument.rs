@@ -1,5 +1,12 @@
 use crate::helpers;
 
+#[derive(Debug, PartialEq)]
+pub enum OscArgumentParseError {
+    NotEnoughBytes,
+    InvalidFormat,
+    InvalidString
+}
+
 /// Represents an OSC argument with a given type
 /// 17 types are recognised: 
 /// - 4 "main" argument types
