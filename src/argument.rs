@@ -37,6 +37,7 @@ pub enum OscArgument {
 }
 
 impl OscArgument {
+    
     /// Returns the type tag character for the OscArgument
     pub fn type_tag(&self) -> char {
         match self {
