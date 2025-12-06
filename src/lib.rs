@@ -1,5 +1,6 @@
 pub mod argument;
 pub mod message;
+pub mod bundle;
 pub mod timetag;
 mod helpers;
 
