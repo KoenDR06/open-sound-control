@@ -1,10 +1,7 @@
 use crate::helpers;
+use crate::helpers::OscParseError;
 
 #[derive(Debug, PartialEq)]
-pub enum OscArgumentParseError {
-    NotEnoughBytes,
-    InvalidFormat,
-    InvalidString
 }
 
 /// Represents an OSC argument with a given type
@@ -162,15 +159,15 @@ impl OscArgument {
         }
     }
 
-    fn fail_if_not_enough_bytes(bytes: &[u8], index: usize, needed: usize) -> Result<(), OscArgumentParseError> {
+    fn fail_if_not_enough_bytes(bytes: &[u8], index: usize, needed: usize) -> Result<(), OscParseError> {
         if index + needed > bytes.len() {
-            Err(OscArgumentParseError::NotEnoughBytes)
+            Err(OscParseError::NotEnoughData)
         } else {
             Ok(())
         }
     }
 
-    fn read_be_bytes<const N: usize, T, F>( bytes: &[u8], index: &mut usize, f: F,) -> Result<T, OscArgumentParseError> where F: Fn([u8; N]) -> T,
+    fn read_be_bytes<const N: usize, T, F>( bytes: &[u8], index: &mut usize, f: F,) -> Result<T, OscParseError> where F: Fn([u8; N]) -> T,
     {
         Self::fail_if_not_enough_bytes(bytes, *index, N)?;
         let raw: [u8; N] = bytes[*index..*index + N].try_into().unwrap();
@@ -183,10 +180,10 @@ impl OscArgument {
         let end = bytes[start..]
             .iter()
             .position(|&b| b == 0)
-            .ok_or(OscArgumentParseError::InvalidFormat)?
+            .ok_or(OscParseError::InvalidFormat)?
             + start;
         let s = String::from_utf8(bytes[start..end].to_vec())
-            .map_err(|_| OscArgumentParseError::InvalidString)?;
+            .map_err(|_| OscParseError::InvalidString)?;
         *index = (end + 1 + 3) & !3; // Advance past null and padding
         Ok(s)
     }

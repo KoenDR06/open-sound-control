@@ -1,18 +1,11 @@
 use crate::argument::OscArgument;
 use crate::helpers;
+use crate::helpers::OscParseError;
 
 /// Represents an OSC message
 pub struct OscMessage {
     pub address: String,
     pub arguments: Vec<OscArgument>
-}
-
-#[derive(Debug)]
-pub enum OscMessageParseError {
-  NotEnoughData,
-  InvalidFormat,
-  InvalidString,
-  CouldNotParseArguments
 }
 
 impl OscMessage {
@@ -26,27 +19,27 @@ impl OscMessage {
   }
 
   /// Construct an OscMessage from a sequence of bytes
-  pub fn from_bytes(bytes: &[u8]) -> Result<Self, OscMessageParseError> {
+  pub fn from_bytes(bytes: &[u8]) -> Result<Self, OscParseError> {
 
     if bytes.is_empty() {
-      return Err(OscMessageParseError::NotEnoughData);
+      return Err(OscParseError::NotEnoughData);
     }
 
     // Extract Address Pattern
-    let address_pattern_null_pos = bytes.iter().position(|&b| b == 0).ok_or(OscMessageParseError::InvalidFormat)?;
+    let address_pattern_null_pos = bytes.iter().position(|&b| b == 0).ok_or(OscParseError::InvalidFormat)?;
     let address_pattern_bytes = &bytes[0..address_pattern_null_pos];
-    let address_pattern = String::from_utf8(address_pattern_bytes.to_vec()).map_err(|_| OscMessageParseError::InvalidString)?;
+    let address_pattern = String::from_utf8(address_pattern_bytes.to_vec()).map_err(|_| OscParseError::InvalidString)?;
     
     // check address pattern starts with '/'
     if ! address_pattern.starts_with("/") {
-      return Err(OscMessageParseError::InvalidString);
+      return Err(OscParseError::InvalidString);
     }
 
     // Extract Type Tag String
-    let comma_pos = address_pattern_null_pos + bytes[address_pattern_null_pos..].iter().position(|&b| b == 0x2c).ok_or(OscMessageParseError::InvalidFormat)?;
-    let type_tag_null_pos = comma_pos + bytes[comma_pos..].iter().position(|&b| b == 0).ok_or(OscMessageParseError::InvalidFormat)?;
+    let comma_pos = address_pattern_null_pos + bytes[address_pattern_null_pos..].iter().position(|&b| b == 0x2c).ok_or(OscParseError::InvalidFormat)?;
+    let type_tag_null_pos = comma_pos + bytes[comma_pos..].iter().position(|&b| b == 0).ok_or(OscParseError::InvalidFormat)?;
     let type_tag_bytes = &bytes[comma_pos..type_tag_null_pos];
-    let type_tag_string = String::from_utf8(type_tag_bytes.to_vec()).map_err(|_| OscMessageParseError::InvalidString)?;
+    let type_tag_string = String::from_utf8(type_tag_bytes.to_vec()).map_err(|_| OscParseError::InvalidString)?;
 
     let mut arguments = Vec::<OscArgument>::new();
 
@@ -56,7 +49,7 @@ impl OscMessage {
     for tag in type_tag_string[1..].chars() {
       let result = OscArgument::from_bytes(bytes, &mut arguments_index, tag);
       if result.is_err() {
-        return Err(OscMessageParseError::CouldNotParseArguments);
+        return Err(OscParseError::CouldNotParseArguments);
       }
       let argument = result.unwrap();
       arguments.push (argument);
