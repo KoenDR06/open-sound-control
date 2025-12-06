@@ -1,7 +1,16 @@
 use crate::helpers;
 use crate::helpers::OscParseError;
+use crate::timetag::OscTimeTag;
 
+
+
+// Represents a colour sent by OSC
 #[derive(Debug, PartialEq)]
+pub struct OscColour {
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8,
+    pub alpha: u8
 }
 
 /// Represents an OSC argument with a given type
@@ -19,11 +28,11 @@ pub enum OscArgument {
 
     /** NONSTANDARD TYPES - MANY OSC IMPLEMENTATIONS DON'T IMPLEMENT THESE (BUT WE DO, OF COURSE) **/
     Int64(i64), /* 64 bit big-endian two’s complement integer */
-    TimeTag(i64), /* OSC-timetag */
+    TimeTag(OscTimeTag), /* OSC-timetag */
     Float64(f64), /* 64 bit (“double”) IEEE 754 floating point number */
     AlternateType(String), /* Alternate type represented as an OSC-string (for example, for systems that differentiate “symbols” from “strings”) */
     AsciiCharacter(i32), /* an ascii character, sent as 32 bits */
-    Colour(u8, u8, u8, u8) /* 32 bit RGBA color */,
+    Colour(OscColour) /* 32 bit RGBA color */,
     MidiMessage(u8, u8, u8, u8), /* 4 byte MIDI message. Bytes from MSB to LSB are: port id, status byte, data1, data2*/
     True, /* True. No bytes are allocated in the argument data. */
     False, /* False. No bytes are allocated in the argument data. */
@@ -34,7 +43,7 @@ pub enum OscArgument {
 }
 
 impl OscArgument {
-    
+
     /// Returns the type tag character for the OscArgument
     pub fn type_tag(&self) -> char {
         match self {
@@ -47,7 +56,7 @@ impl OscArgument {
             OscArgument::Float64(_) => 'd',
             OscArgument::AlternateType(_) => 'S',
             OscArgument::AsciiCharacter(_) => 'c',
-            OscArgument::Colour(_, _, _, _) => 'r',
+            OscArgument::Colour(_) => 'r',
             OscArgument::MidiMessage(_, _, _, _) => 'm',
             OscArgument::True => 'T',
             OscArgument::False => 'F',
@@ -82,7 +91,7 @@ impl OscArgument {
             bytes
         },
         OscArgument::Int64(i) => i.to_be_bytes().to_vec(),
-        OscArgument::TimeTag(t) => t.to_be_bytes().to_vec(),
+        OscArgument::TimeTag(t) => t.to_bytes().to_vec(),
         OscArgument::Float64(f) => f.to_be_bytes().to_vec(),
         OscArgument::AlternateType(s) => {
             let mut bytes = s.as_bytes().to_vec();
@@ -90,14 +99,14 @@ impl OscArgument {
             bytes
         },
         OscArgument::AsciiCharacter(c) => c.to_be_bytes().to_vec(),
-        OscArgument::Colour(r, g, b, a) => vec![*r, *g, *b, *a],
+        OscArgument::Colour(c) => vec![c.red, c.green, c.blue, c.alpha],
         OscArgument::MidiMessage(port_id, status_byte, data1, data2) => vec![*port_id, *status_byte, *data1, *data2],
         _ => [].to_vec()
       }
     }
 
     // Returns an OscArgument given a sequence of bytes, an index and a typetag
-    pub fn from_bytes(bytes: &[u8], index: &mut usize, typetag: char) -> Result<Self, OscArgumentParseError> {
+    pub fn from_bytes(bytes: &[u8], index: &mut usize, typetag: char) -> Result<Self, OscParseError> {
         match typetag {
             // Int32
             'i' => { 
@@ -113,7 +122,7 @@ impl OscArgument {
             },
             // Blob
             'b' => { 
-                Self::fail_if_not_enough_bytes(bytes, *index,4)?;
+                Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
                 let blob_size = Self::read_be_bytes::<4, _, _>(bytes, index, i32::from_be_bytes)? as usize;
                 dbg!(blob_size);
                 dbg!(bytes.len());
@@ -124,6 +133,11 @@ impl OscArgument {
             'h' => { 
                 Ok(OscArgument::Int64(Self::read_be_bytes::<8, _, _>(bytes, index, i64::from_be_bytes)?))
             },
+            // TimeTag
+            't' => {
+                let value = Self::read_be_bytes::<8, _, _>(bytes, index, i64::from_be_bytes)?;
+                Ok(OscArgument::TimeTag(OscTimeTag::from_i64 (value)))
+            },
             // Float64
             'd' => {
                 Ok(OscArgument::Float64(Self::read_be_bytes::<8, _, _>(bytes, index, f64::from_be_bytes)?))
@@ -132,9 +146,22 @@ impl OscArgument {
             'S' => { 
                 Ok(OscArgument::AlternateType(Self::read_osc_string(bytes, index)?))
             },
-            //OscArgument::AsciiCharacter(_) => 'c',
-            //OscArgument::Colour(_, _, _, _) => 'r',
-            //OscArgument::MidiMessage(_, _, _, _) => 'm',
+            // AsciiCharacter
+            'c' => {
+                Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
+                Ok(OscArgument::AsciiCharacter(Self::read_be_bytes::<4, _, _>(bytes, index, i32::from_be_bytes)?))
+            },
+            // Colour
+            'r' => {
+                Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
+                let colour = OscColour { red: bytes[*index], green: bytes[*index + 1], blue: bytes[*index + 2], alpha: bytes[*index + 3]};
+                Ok(OscArgument::Colour(colour))
+            },
+            // Midi Message
+            'm' => {
+                Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
+                Ok(OscArgument::MidiMessage(bytes[0], bytes[1], bytes[2], bytes[3]))
+            },
             'T' => {
                 Ok(OscArgument::True)
             },
@@ -154,7 +181,7 @@ impl OscArgument {
                 Ok(OscArgument::ArrayEnd)
             },
             _ => {
-                Ok(OscArgument::True)
+                Err(OscParseError::UnknownTypeTag)
             }
         }
     }
@@ -175,7 +202,7 @@ impl OscArgument {
         Ok(f(raw))
     }
 
-    fn read_osc_string(bytes: &[u8], index: &mut usize) -> Result<String, OscArgumentParseError> {
+    fn read_osc_string(bytes: &[u8], index: &mut usize) -> Result<String, OscParseError> {
         let start = *index;
         let end = bytes[start..]
             .iter()
@@ -202,11 +229,11 @@ mod tests {
         assert_eq!(OscArgument::String("".to_string()).type_tag(), 's');
         assert_eq!(OscArgument::Blob(vec![]).type_tag(), 'b');
         assert_eq!(OscArgument::Int64(0).type_tag(), 'h');
-        assert_eq!(OscArgument::TimeTag(0).type_tag(), 't');
+        assert_eq!(OscArgument::TimeTag(OscTimeTag::from_i64(0)).type_tag(), 't');
         assert_eq!(OscArgument::Float64(0.0).type_tag(), 'd');
         assert_eq!(OscArgument::AlternateType("".to_string()).type_tag(), 'S');
         assert_eq!(OscArgument::AsciiCharacter('a' as i32).type_tag(), 'c');
-        assert_eq!(OscArgument::Colour(255, 0, 255, 0).type_tag(), 'r');
+        assert_eq!(OscArgument::Colour(OscColour { red: 255, green: 0, blue: 255, alpha: 0 }).type_tag(), 'r');
         assert_eq!(OscArgument::MidiMessage(0, 0, 0, 0).type_tag(), 'm');
         assert_eq!(OscArgument::True.type_tag(), 'T');
         assert_eq!(OscArgument::False.type_tag(), 'F');
@@ -223,9 +250,18 @@ mod tests {
         assert_eq!(OscArgument::String("hello".to_string()).to_bytes(), helpers::osc_string_as_bytes("hello"));
         assert_eq!(OscArgument::Blob(vec![0x01, 0x02, 0x03]).to_bytes(), vec![0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03, 0x00]);
         assert_eq!(OscArgument::Int64(0x0123_4567_89AB_CDEF).to_bytes(), (0x0123_4567_89AB_CDEF as i64).to_be_bytes());
-        // TimeTag Here
+        assert_eq!(OscArgument::TimeTag(OscTimeTag { seconds: 0x12345678, fractional: 0x9ABCDEF0 }).to_bytes(), vec![0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0]);
         assert_eq!(OscArgument::Float64(123456789.1234).to_bytes(), (123456789.1234 as f64).to_be_bytes());
         assert_eq!(OscArgument::AlternateType("alternate".to_string()).to_bytes(), helpers::osc_string_as_bytes("alternate"));
+        assert_eq!(OscArgument::AsciiCharacter('A' as i32).to_bytes(), vec![0x00, 0x00, 0x00, 0x41]);
+        assert_eq!(OscArgument::Colour(OscColour { red: 255, green: 0, blue: 255, alpha: 0 }).to_bytes(), vec![255, 0, 255, 0]);
+        assert_eq!(OscArgument::MidiMessage(0, 10, 20, 30).to_bytes(), vec![0, 10, 20, 30]);
+        assert_eq!(OscArgument::True.to_bytes(), vec![]);
+        assert_eq!(OscArgument::False.to_bytes(), vec![]);
+        assert_eq!(OscArgument::Nil.to_bytes(), vec![]);
+        assert_eq!(OscArgument::Infinitum.to_bytes(), vec![]);
+        assert_eq!(OscArgument::ArrayBegin.to_bytes(), vec![]);
+        assert_eq!(OscArgument::ArrayEnd.to_bytes(), vec![]);
     }
 
     #[test]
@@ -235,8 +271,17 @@ mod tests {
         assert_eq!(OscArgument::from_bytes(&helpers::osc_string_as_bytes("hello"), &mut 0usize.clone(), 's'), Ok(OscArgument::String("hello".to_string())));
         assert_eq!(OscArgument::from_bytes(&vec![0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03, 0x00], &mut 0usize.clone(), 'b'), Ok(OscArgument::Blob(vec![0x01, 0x02, 0x03])));
         assert_eq!(OscArgument::from_bytes(&(0x0123_4567_89AB_CDEF as i64).to_be_bytes(), &mut 0usize.clone(), 'h'), Ok(OscArgument::Int64(0x0123_4567_89AB_CDEF)));
-        // TimeTag Here
+        assert_eq!(OscArgument::from_bytes(&vec![0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0], &mut 0usize.clone(), 't'), Ok(OscArgument::TimeTag(OscTimeTag { seconds: 0x12345678, fractional: 0x9ABCDEF0 })));
         assert_eq!(OscArgument::from_bytes(&(123456789.1234 as f64).to_be_bytes(), &mut 0usize.clone(), 'd'), Ok(OscArgument::Float64(123456789.1234)));
         assert_eq!(OscArgument::from_bytes(&helpers::osc_string_as_bytes("alternate"), &mut 0usize.clone(), 'S'), Ok(OscArgument::AlternateType("alternate".to_string())));
+        assert_eq!(OscArgument::from_bytes(&vec![0x00, 0x00, 0x00, 0x41], &mut 0usize.clone(), 'c'), Ok(OscArgument::AsciiCharacter('A' as i32)));
+        assert_eq!(OscArgument::from_bytes(&vec![255, 87, 123, 255], &mut 0usize.clone(), 'r'), Ok(OscArgument::Colour(OscColour { red: 255, green: 87, blue: 123, alpha: 255 })));
+        assert_eq!(OscArgument::from_bytes(&vec![0, 10, 20, 30], &mut 0usize.clone(), 'm'), Ok(OscArgument::MidiMessage(0, 10, 20, 30)));
+        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), 'T'), Ok(OscArgument::True));
+        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), 'F'), Ok(OscArgument::False));
+        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), 'N'), Ok(OscArgument::Nil));
+        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), 'I'), Ok(OscArgument::Infinitum));
+        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), '['), Ok(OscArgument::ArrayBegin));
+        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), ']'), Ok(OscArgument::ArrayEnd));
     }
 }
