@@ -1,4 +1,5 @@
 use crate::helpers::OscParseError;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 // From OSC v1.0 Spec:
 // 
@@ -16,6 +17,21 @@ pub struct OscTimeTag {
 }
 
 impl OscTimeTag {
+
+    pub fn now() -> Self {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time calculation error");
+
+        let unix_seconds = now.as_secs() as u64;
+        let unix_nanos = now.subsec_nanos() as u64;
+        let ntp_seconds = unix_seconds + 2208988800;
+        let fractional = ((unix_nanos as f64 / 1_000_000_000.0) * (u32::MAX as f64 + 1.0)) as u32;
+
+        OscTimeTag {
+            seconds: ntp_seconds as u32,
+            fractional,
+        }
+    }
+
     pub fn to_bytes(&self) -> [u8; 8] {
         let mut bytes = [0u8; 8];
         bytes[..4].copy_from_slice(&self.seconds.to_be_bytes());
