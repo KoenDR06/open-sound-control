@@ -1,8 +1,10 @@
 use open_sound_control::*;
-use std::net::UdpSocket;
 
 fn main() {
-    let socket = UdpSocket::bind("127.0.0.1:0").expect("Failed to bind socket");
+    let sender = OscSender::new("127.0.0.1".to_string(), 9000);
+    
+    //--------------------------------------------------------------
+    // Send an OSC Message 
 
     let m1 = OscMessage {
       address: String::from("/hello"),
@@ -12,5 +14,31 @@ fn main() {
       ]
     };
 
-    socket.send_to(&m1.to_bytes(), "127.0.0.1:8000".to_string()).expect("Failed to send message");
+    sender.send_message (&m1);
+
+
+    //--------------------------------------------------------------
+    // Send an OSC Bundle
+    
+    let m2 = OscMessage {
+      address: String::from("/frequency"),
+      arguments: vec![
+        OscArgument::Float32(440.0),
+      ]
+    };
+
+    let m3 = OscMessage {
+      address: String::from("/instrument"),
+      arguments: vec![
+        OscArgument::String("drums".to_string()),
+        OscArgument::Int32(4)
+      ]
+    };
+
+    let b1 = OscBundle {
+      time_tag: OscTimeTag::now(),
+      messages: vec![m2, m3]
+    };
+
+    sender.send_bundle (&b1);
 }
