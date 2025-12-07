@@ -10,7 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 // This is the representation used by Internet NTP timestamps.
 // The time tag value consisting of 63 zero bits followed by a one
 // in the least signifigant bit is a special case meaning "immediately."
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct OscTimeTag {
     pub seconds: u32,      // number of seconds since midnight on January 1, 1900
     pub fractional: u32,     // fractional parts of a second to a precision of about 200 picoseconds
