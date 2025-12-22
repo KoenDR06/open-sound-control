@@ -124,9 +124,9 @@ impl OscArgument {
             },
             // Blob
             'b' => { 
-                Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
+                Self::ensure_bytes_available(bytes, *index, 4)?;
                 let blob_size = Self::read_be_bytes::<4, _, _>(bytes, index, i32::from_be_bytes)? as usize;
-                Self::fail_if_not_enough_bytes(bytes, *index, blob_size)?;
+                Self::ensure_bytes_available(bytes, *index, blob_size)?;
                 let data = bytes[*index..*index + blob_size].to_vec();
                 *index += blob_size;
                 *index = (*index + 3) & !3; // skip padding
@@ -151,19 +151,19 @@ impl OscArgument {
             },
             // AsciiCharacter
             'c' => {
-                Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
+                Self::ensure_bytes_available(bytes, *index, 4)?;
                 Ok(OscArgument::AsciiCharacter(Self::read_be_bytes::<4, _, _>(bytes, index, i32::from_be_bytes)? as u8))
             },
             // Colour
             'r' => {
-                Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
+                Self::ensure_bytes_available(bytes, *index, 4)?;
                 let colour = OscColour { red: bytes[*index], green: bytes[*index + 1], blue: bytes[*index + 2], alpha: bytes[*index + 3]};
                 *index += 4;
                 Ok(OscArgument::Colour(colour))
             },
             // Midi Message
             'm' => {
-                Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
+                Self::ensure_bytes_available(bytes, *index, 4)?;
                 let i = *index;
                 *index += 4;
                 Ok(OscArgument::MidiMessage(bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3]))
@@ -192,7 +192,7 @@ impl OscArgument {
         }
     }
 
-    fn fail_if_not_enough_bytes(bytes: &[u8], index: usize, needed: usize) -> Result<(), OscParseError> {
+    fn ensure_bytes_available(bytes: &[u8], index: usize, needed: usize) -> Result<(), OscParseError> {
         if index + needed > bytes.len() {
             Err(OscParseError::NotEnoughData)
         } else {
@@ -202,7 +202,7 @@ impl OscArgument {
 
     fn read_be_bytes<const N: usize, T, F>( bytes: &[u8], index: &mut usize, f: F,) -> Result<T, OscParseError> where F: Fn([u8; N]) -> T,
     {
-        Self::fail_if_not_enough_bytes(bytes, *index, N)?;
+        Self::ensure_bytes_available(bytes, *index, N)?;
         let raw: [u8; N] = bytes[*index..*index + N].try_into().unwrap();
         *index += N;
         Ok(f(raw))
