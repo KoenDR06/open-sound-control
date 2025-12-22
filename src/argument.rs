@@ -127,7 +127,10 @@ impl OscArgument {
                 Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
                 let blob_size = Self::read_be_bytes::<4, _, _>(bytes, index, i32::from_be_bytes)? as usize;
                 Self::fail_if_not_enough_bytes(bytes, *index, blob_size)?;
-                Ok(OscArgument::Blob(bytes[*index..*index + blob_size].to_vec()))
+                let data = bytes[*index..*index + blob_size].to_vec();
+                *index += blob_size;
+                *index = (*index + 3) & !3; // skip padding
+                Ok(OscArgument::Blob(data))
             },
             // Int64
             'h' => { 
@@ -155,12 +158,15 @@ impl OscArgument {
             'r' => {
                 Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
                 let colour = OscColour { red: bytes[*index], green: bytes[*index + 1], blue: bytes[*index + 2], alpha: bytes[*index + 3]};
+                *index += 4;
                 Ok(OscArgument::Colour(colour))
             },
             // Midi Message
             'm' => {
                 Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
-                Ok(OscArgument::MidiMessage(bytes[0], bytes[1], bytes[2], bytes[3]))
+                let i = *index;
+                *index += 4;
+                Ok(OscArgument::MidiMessage(bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3]))
             },
             'T' => {
                 Ok(OscArgument::True)
