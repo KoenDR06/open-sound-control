@@ -74,6 +74,7 @@ impl OscArgument {
         OscArgument::Float32(f) => f.to_be_bytes().to_vec(),
         OscArgument::String(s) => {
             let mut bytes = s.as_bytes().to_vec();
+            bytes.push(0);
             helpers::pad_to_multiple_of_4_bytes(&mut bytes);
             bytes
         },
@@ -95,6 +96,7 @@ impl OscArgument {
         OscArgument::Float64(f) => f.to_be_bytes().to_vec(),
         OscArgument::AlternateType(s) => {
             let mut bytes = s.as_bytes().to_vec();
+            bytes.push(0);
             helpers::pad_to_multiple_of_4_bytes(&mut bytes);
             bytes
         },
