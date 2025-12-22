@@ -126,8 +126,6 @@ impl OscArgument {
             'b' => { 
                 Self::fail_if_not_enough_bytes(bytes, *index, 4)?;
                 let blob_size = Self::read_be_bytes::<4, _, _>(bytes, index, i32::from_be_bytes)? as usize;
-                dbg!(blob_size);
-                dbg!(bytes.len());
                 Self::fail_if_not_enough_bytes(bytes, *index, blob_size)?;
                 Ok(OscArgument::Blob(bytes[*index..*index + blob_size].to_vec()))
             },
