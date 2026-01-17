@@ -257,6 +257,8 @@ impl OscArgument {
 // Tests
 #[cfg(test)]
 mod tests {
+    use std::i64;
+
     use super::*;
 
     //----------------------------------------------------------------
@@ -288,19 +290,134 @@ mod tests {
         }
     }
 
+    //----------------------------------------------------------------
+    // Test argument to bytes conversion
     #[test]
-    fn test_arguments_to_bytes() {
+    fn test_arguments_to_bytes_int32() {
         assert_eq!(OscArgument::Int32(123).to_bytes(), 123_i32.to_be_bytes());
+        assert_eq!(OscArgument::Int32(0).to_bytes(), 0_i32.to_be_bytes());
+        assert_eq!(OscArgument::Int32(-123).to_bytes(), (-123_i32).to_be_bytes());
+        assert_eq!(OscArgument::Int32(i32::MAX).to_bytes(), i32::MAX.to_be_bytes());
+        assert_eq!(OscArgument::Int32(i32::MIN).to_bytes(), i32::MIN.to_be_bytes());
+    }
+
+    #[test]
+    fn test_arguments_to_bytes_float32() {
         assert_eq!(OscArgument::Float32(123.456).to_bytes(), 123.456_f32.to_be_bytes());
-        assert_eq!(OscArgument::String("hello".to_string()).to_bytes(), helpers::osc_string_as_bytes("hello"));
+        assert_eq!(OscArgument::Float32(0.0).to_bytes(), 0.0_f32.to_be_bytes());
+        assert_eq!(OscArgument::Float32(-123.456).to_bytes(), (-123.456_f32).to_be_bytes());
+        assert_eq!(OscArgument::Float32(f32::MAX).to_bytes(), f32::MAX.to_be_bytes());
+        assert_eq!(OscArgument::Float32(f32::MIN).to_bytes(), f32::MIN.to_be_bytes());
+        assert_eq!(OscArgument::Float32(f32::INFINITY).to_bytes(), f32::INFINITY.to_be_bytes());
+        assert_eq!(OscArgument::Float32(f32::NEG_INFINITY).to_bytes(), f32::NEG_INFINITY.to_be_bytes());
+        assert_eq!(OscArgument::Float32(-0.0).to_bytes(), (-0.0_f32).to_be_bytes());
+    }
+
+    #[test]
+    fn test_arguments_to_bytes_string() {
+        assert_eq!(OscArgument::String("".to_string()).to_bytes(), vec![0x00, 0x00, 0x00, 0x00]); // empty string = null + 3 pad
+        assert_eq!(OscArgument::String("x".to_string()).to_bytes(), vec![b'x', 0x00, 0x00, 0x00]); // 1 char + null + 2 pad
+        assert_eq!(OscArgument::String("hi".to_string()).to_bytes(), vec![b'h', b'i', 0x00, 0x00]); // 2 chars + null + 1 pad
+        assert_eq!(OscArgument::String("abc".to_string()).to_bytes(), vec![b'a', b'b', b'c', 0x00]); // 3 chars + null = 4 bytes
+        assert_eq!(OscArgument::String("word".to_string()).to_bytes(), vec![b'w', b'o', b'r', b'd', 0x00, 0x00, 0x00, 0x00]); // 4 chars + null + 3 pad = 8 bytes
+        assert_eq!(OscArgument::String("hello".to_string()).to_bytes(), vec![b'h', b'e', b'l', b'l', b'o', 0x00, 0x00, 0x00]); // 5 chars + null + 2 pad = 8 bytes
+    }
+
+    #[test]
+    fn test_arguments_to_bytes_blob() {
+        // Empty blob
+        assert_eq!(OscArgument::Blob(vec![]).to_bytes(), vec![0x00, 0x00, 0x00, 0x00]);
+
+        // 1 byte + 3 pad
+        assert_eq!(OscArgument::Blob(vec![0xFF]).to_bytes(), vec![0x00, 0x00, 0x00, 0x01, 0xFF, 0x00, 0x00, 0x00]);
+
+        // 2 bytes + 2 pad
+        assert_eq!(OscArgument::Blob(vec![0xAA, 0xBB]).to_bytes(), vec![0x00, 0x00, 0x00, 0x02, 0xAA, 0xBB, 0x00, 0x00]);
+
+        // 3 bytes + 1 pad
         assert_eq!(OscArgument::Blob(vec![0x01, 0x02, 0x03]).to_bytes(), vec![0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03, 0x00]);
+        
+        // Blob that's exactly 4 bytes (no padding needed)
+        assert_eq!(OscArgument::Blob(vec![0x01, 0x02, 0x03, 0x04]).to_bytes(), vec![0x00, 0x00, 0x00, 0x04, 0x01, 0x02, 0x03, 0x04]);
+    }
+
+    #[test]
+    fn test_arguments_to_bytes_int64() {
         assert_eq!(OscArgument::Int64(0x0123_4567_89AB_CDEF).to_bytes(), (0x0123_4567_89AB_CDEF as i64).to_be_bytes());
+        assert_eq!(OscArgument::Int64(0).to_bytes(), 0_i64.to_be_bytes());
+        assert_eq!(OscArgument::Int64(-10000).to_bytes(), (-10000_i64).to_be_bytes());
+        assert_eq!(OscArgument::Int64(i64::MAX).to_bytes(), i64::MAX.to_be_bytes());
+        assert_eq!(OscArgument::Int64(i64::MIN).to_bytes(), i64::MIN.to_be_bytes());
+    }
+
+    #[test]
+    fn test_arguments_to_bytes_timetag() {
         assert_eq!(OscArgument::TimeTag(OscTimeTag { seconds: 0x12345678, fractional: 0x9ABCDEF0 }).to_bytes(), vec![0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0]);
+    }
+
+    #[test]
+    fn test_arguments_to_bytes_float64() {
         assert_eq!(OscArgument::Float64(123456789.1234).to_bytes(), (123456789.1234 as f64).to_be_bytes());
+        assert_eq!(OscArgument::Float64(0.0).to_bytes(), (0.0_f64).to_be_bytes());
+        assert_eq!(OscArgument::Float64(-10000.0).to_bytes(), (-10000.0_f64).to_be_bytes());
+        assert_eq!(OscArgument::Float64(f64::MAX).to_bytes(), f64::MAX.to_be_bytes());
+        assert_eq!(OscArgument::Float64(f64::MIN).to_bytes(), f64::MIN.to_be_bytes());
+        assert_eq!(OscArgument::Float64(f64::INFINITY).to_bytes(), f64::INFINITY.to_be_bytes());
+        assert_eq!(OscArgument::Float64(f64::NEG_INFINITY).to_bytes(), f64::NEG_INFINITY.to_be_bytes());
+        assert_eq!(OscArgument::Float64(-0.0).to_bytes(), (-0.0_f64).to_be_bytes());
+    }
+
+    #[test]
+    fn test_arguments_to_bytes_alternate_type() {
         assert_eq!(OscArgument::AlternateType("alternate".to_string()).to_bytes(), helpers::osc_string_as_bytes("alternate"));
+        assert_eq!(OscArgument::AlternateType("".to_string()).to_bytes(), vec![0x00, 0x00, 0x00, 0x00]);
+        assert_eq!(OscArgument::AlternateType("yo".to_string()).to_bytes(), vec![b'y', b'o', 0x00, 0x00]); // 2 chars + null + 1 pad
+        assert_eq!(OscArgument::AlternateType("xyz".to_string()).to_bytes(), vec![b'x', b'y', b'z', 0x00]); // 3 chars + null = 4 bytes
+    }
+
+    #[test]
+    fn test_arguments_to_bytes_ascii() {
+        // Test printable ASCII
         assert_eq!(OscArgument::AsciiCharacter('A' as u8).to_bytes(), vec![0x00, 0x00, 0x00, 0x41]);
-        assert_eq!(OscArgument::Colour(OscColour { red: 255, green: 0, blue: 255, alpha: 0 }).to_bytes(), vec![255, 0, 255, 0]);
+        assert_eq!(OscArgument::AsciiCharacter('B' as u8).to_bytes(), vec![0x00, 0x00, 0x00, 0x42]);
+        assert_eq!(OscArgument::AsciiCharacter('C' as u8).to_bytes(), vec![0x00, 0x00, 0x00, 0x43]);
+        assert_eq!(OscArgument::AsciiCharacter('x' as u8).to_bytes(), vec![0x00, 0x00, 0x00, 0x78]);
+        assert_eq!(OscArgument::AsciiCharacter('y' as u8).to_bytes(), vec![0x00, 0x00, 0x00, 0x79]);
+        assert_eq!(OscArgument::AsciiCharacter('z' as u8).to_bytes(), vec![0x00, 0x00, 0x00, 0x7A]);
+
+        // Test non-printable ASCII
+        assert_eq!(OscArgument::AsciiCharacter(0).to_bytes(), vec![0x00, 0x00, 0x00, 0x00]);
+        assert_eq!(OscArgument::AsciiCharacter(127).to_bytes(), vec![0x00, 0x00, 0x00, 0x7F]);
+
+        // Test extended ASCII (might want to validate this is intentional)
+        assert_eq!(OscArgument::AsciiCharacter(255).to_bytes(), vec![0x00, 0x00, 0x00, 0xFF]);
+    }
+
+    #[test]
+    fn test_arguments_to_bytes_colour() {
+        // Test all combinations of rgba 
+        for r in [0, 128, 255] {
+            for g in [0, 128, 255] {
+                for b in [0, 128, 255] {
+                    for a in [0, 128, 255] {
+                        let colour = OscColour { red: r, green: g, blue: b, alpha: a };
+                        assert_eq!(OscArgument::Colour(colour).to_bytes(), vec![r, g, b, a]);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_arguments_to_bytes_midi() {
         assert_eq!(OscArgument::MidiMessage(0, 10, 20, 30).to_bytes(), vec![0, 10, 20, 30]);
+        assert_eq!(OscArgument::MidiMessage(255, 128, 64, 32).to_bytes(), vec![255, 128, 64, 32]);
+        assert_eq!(OscArgument::MidiMessage(0, 0, 0, 0).to_bytes(), vec![0, 0, 0, 0]);
+        assert_eq!(OscArgument::MidiMessage(255, 255, 255, 255).to_bytes(), vec![255, 255, 255, 255]);
+    }
+
+    #[test]
+    fn test_arguments_to_bytes_other() {
         assert_eq!(OscArgument::True.to_bytes(), vec![]);
         assert_eq!(OscArgument::False.to_bytes(), vec![]);
         assert_eq!(OscArgument::Nil.to_bytes(), vec![]);
