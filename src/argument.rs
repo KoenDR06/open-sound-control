@@ -129,7 +129,7 @@ impl OscArgument {
                 Self::ensure_bytes_available(bytes, *index, blob_size)?;
                 let data = bytes[*index..*index + blob_size].to_vec();
                 *index += blob_size;
-                *index = (*index + 3) & !3; // skip padding
+                *index += (4 - (blob_size % 4)) % 4;
                 Ok(OscArgument::Blob(data))
             },
             // Int64
