@@ -989,6 +989,91 @@ mod tests {
         );
         assert_eq!(index, 10); // 2 + 8 = 10
     }
+
+    #[test]
+    fn test_arguments_from_bytes_alternate_type() {
+        // Simple case
+        let mut index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&helpers::osc_string_as_bytes("alternate"), &mut index, 'S'),
+            Ok(OscArgument::AlternateType("alternate".to_string()))
+        );
+        assert_eq!(index, 12); // "alternate" = 9 + null + 2 pad = 12
+
+        // Empty string
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00], &mut index, 'S'),
+            Ok(OscArgument::AlternateType("".to_string()))
+        );
+        assert_eq!(index, 4);
+
+        // 1 character (1 + null + 2 pad = 4)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[b'a', 0x00, 0x00, 0x00], &mut index, 'S'),
+            Ok(OscArgument::AlternateType("a".to_string()))
+        );
+        assert_eq!(index, 4);
+
+        // 2 characters (2 + null + 1 pad = 4)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[b'y', b'o', 0x00, 0x00], &mut index, 'S'),
+            Ok(OscArgument::AlternateType("yo".to_string()))
+        );
+        assert_eq!(index, 4);
+
+        // 3 characters (3 + null = 4, no padding needed)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[b'x', b'y', b'z', 0x00], &mut index, 'S'),
+            Ok(OscArgument::AlternateType("xyz".to_string()))
+        );
+        assert_eq!(index, 4);
+
+        // 4 characters (4 + null + 3 pad = 8)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[b'a', b'b', b'c', b'd', 0x00, 0x00, 0x00, 0x00], &mut index, 'S'),
+            Ok(OscArgument::AlternateType("abcd".to_string()))
+        );
+        assert_eq!(index, 8);
+
+        // Longer string
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[b's', b'y', b'm', b'b', b'o', b'l', 0x00, 0x00], &mut index, 'S'),
+            Ok(OscArgument::AlternateType("symbol".to_string()))
+        );
+        assert_eq!(index, 8); // 6 + null + 1 pad = 8
+
+        // Test with non-zero index (simulating sequential parsing)
+        let data = [
+            0xFF, 0xFF, 0xFF, 0xFF,  // junk padding (4 bytes)
+            b't', b'y', b'p', 0x00,  // "typ" + null = 4 bytes
+            0xAA, 0xBB, 0xCC, 0xDD,  // more junk after (4 bytes)
+        ];
+        index = 4; // Start after the padding
+        assert_eq!(
+            OscArgument::from_bytes(&data, &mut index, 'S'),
+            Ok(OscArgument::AlternateType("typ".to_string()))
+        );
+        assert_eq!(index, 8); // Should advance by 4 bytes (from 4 to 8)
+
+        // Test with different starting index and longer string
+        let data2 = [
+            0xAA, 0xBB,                              // 2 bytes padding
+            b'a', b't', b'o', b'm', 0x00, 0x00, 0x00, 0x00,  // "atom" (4 + null + 3 pad = 8)
+            0xCC, 0xDD,                              // 2 bytes after
+        ];
+        index = 2;
+        assert_eq!(
+            OscArgument::from_bytes(&data2, &mut index, 'S'),
+            Ok(OscArgument::AlternateType("atom".to_string()))
+        );
+        assert_eq!(index, 10); // 2 + 8 = 10
+    }
     
     #[test]
     fn test_arguments_from_bytes() {
