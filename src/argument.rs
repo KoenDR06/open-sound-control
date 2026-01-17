@@ -829,6 +829,75 @@ mod tests {
     }
 
     #[test]
+    fn test_arguments_from_bytes_timetag() {
+        // Simple case
+        let mut index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0], &mut index, 't'),
+            Ok(OscArgument::TimeTag(OscTimeTag { seconds: 0x12345678, fractional: 0x9ABCDEF0 }))
+        );
+        assert_eq!(index, 8);
+
+        // Zero timetag (immediate)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], &mut index, 't'),
+            Ok(OscArgument::TimeTag(OscTimeTag { seconds: 0, fractional: 0 }))
+        );
+        assert_eq!(index, 8);
+
+        // Max seconds, zero fractional
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00], &mut index, 't'),
+            Ok(OscArgument::TimeTag(OscTimeTag { seconds: 0xFFFFFFFF, fractional: 0 }))
+        );
+        assert_eq!(index, 8);
+
+        // Zero seconds, max fractional
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF], &mut index, 't'),
+            Ok(OscArgument::TimeTag(OscTimeTag { seconds: 0, fractional: 0xFFFFFFFF }))
+        );
+        assert_eq!(index, 8);
+
+        // Max timetag
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], &mut index, 't'),
+            Ok(OscArgument::TimeTag(OscTimeTag { seconds: 0xFFFFFFFF, fractional: 0xFFFFFFFF }))
+        );
+        assert_eq!(index, 8);
+
+        // Test with non-zero index (simulating sequential parsing)
+        let data = [
+            0xFF, 0xFF, 0xFF, 0xFF,  // junk padding (4 bytes)
+            0x00, 0x00, 0x00, 0x01, 0x80, 0x00, 0x00, 0x00,  // 1 second + 0.5 fractional (8 bytes)
+            0xAA, 0xBB, 0xCC, 0xDD,  // more junk after (4 bytes)
+        ];
+        index = 4; // Start after the padding
+        assert_eq!(
+            OscArgument::from_bytes(&data, &mut index, 't'),
+            Ok(OscArgument::TimeTag(OscTimeTag { seconds: 1, fractional: 0x80000000 }))
+        );
+        assert_eq!(index, 12); // Should advance by 8 bytes (from 4 to 12)
+
+        // Test with different starting index
+        let data2 = [
+            0xAA, 0xBB,              // 2 bytes padding
+            0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89,  // arbitrary timetag (8 bytes)
+            0xCC, 0xDD,              // 2 bytes after
+        ];
+        index = 2;
+        assert_eq!(
+            OscArgument::from_bytes(&data2, &mut index, 't'),
+            Ok(OscArgument::TimeTag(OscTimeTag { seconds: 0xABCDEF01, fractional: 0x23456789 }))
+        );
+        assert_eq!(index, 10); // 2 + 8 = 10
+    }
+
+    #[test]
     fn test_arguments_from_bytes() {
         assert_eq!(OscArgument::from_bytes(&123_i32.to_be_bytes(), &mut 0usize.clone(), 'i'), Ok(OscArgument::Int32(123)));
         assert_eq!(OscArgument::from_bytes(&567.3_f32.to_be_bytes(), &mut 0usize.clone(), 'f'), Ok(OscArgument::Float32(567.3)));
