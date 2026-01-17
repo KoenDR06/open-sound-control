@@ -103,7 +103,7 @@ impl OscArgument {
         OscArgument::AsciiCharacter(c) => (*c as u32).to_be_bytes().to_vec(),
         OscArgument::Colour(c) => vec![c.red, c.green, c.blue, c.alpha],
         OscArgument::MidiMessage(port_id, status_byte, data1, data2) => vec![*port_id, *status_byte, *data1, *data2],
-        _ => [].to_vec()
+        _ => Vec::new()
       }
     }
 
