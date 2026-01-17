@@ -670,6 +670,27 @@ mod tests {
             Ok(OscArgument::String("music".to_string()))
         );
         assert_eq!(index, 10); // 2 + 8 = 10
+
+        // String without null terminator
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[b'h', b'i'], &mut index, 's'),
+            Err(OscParseError::InvalidFormat)
+        );
+
+        // Invalid UTF-8
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0xFF, 0xFE, 0x00, 0x00], &mut index, 's'),
+            Err(OscParseError::InvalidString)
+        );
+
+        // Empty buffer (no null terminator found)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[], &mut index, 's'),
+            Err(OscParseError::InvalidFormat)
+        );
     }
 
     #[test]
@@ -757,6 +778,26 @@ mod tests {
             Ok(OscArgument::Blob(vec![0x11, 0x22, 0x33]))
         );
         assert_eq!(index, 10); // 2 + 4 (length) + 3 (data) + 1 (pad) = 10
+
+        // Blob with insufficient length field
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00], &mut index, 'b'),
+            Err(OscParseError::NotEnoughData)
+        );
+
+        // Blob claims 10 bytes but only 3 are provided
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x0A, 0x01, 0x02, 0x03], &mut index, 'b'),
+            Err(OscParseError::NotEnoughData)
+        );
+
+        // Blob with length but no data
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x01], &mut index, 'b'),
+            Err(OscParseError::NotEnoughData)
+        );
     }
 
     #[test]
@@ -1073,6 +1114,20 @@ mod tests {
             Ok(OscArgument::AlternateType("atom".to_string()))
         );
         assert_eq!(index, 10); // 2 + 8 = 10
+
+        // AlternateType without null terminator
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[b'h', b'i'], &mut index, 'S'),
+            Err(OscParseError::InvalidFormat)
+        );
+
+        // Invalid UTF-8
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0xFF, 0xFE, 0x00, 0x00], &mut index, 'S'),
+            Err(OscParseError::InvalidString)
+        );
     }
     
     #[test]
@@ -1314,5 +1369,96 @@ mod tests {
             Ok(OscArgument::ArrayEnd)
         );
         assert_eq!(index, 0);
+    }
+
+    #[test]
+    fn test_arguments_from_bytes_unknown_type_tag() {
+        let mut index = 0;
+        
+        // Unknown type tag 'X'
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00], &mut index, 'X'),
+            Err(OscParseError::UnknownTypeTag)
+        );
+
+        // Various invalid type tags
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00], &mut index, 'Z'),
+            Err(OscParseError::UnknownTypeTag)
+        );
+
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00], &mut index, '!'),
+            Err(OscParseError::UnknownTypeTag)
+        );
+    }
+
+    #[test]
+    fn test_arguments_from_bytes_not_enough_data() {
+        let mut index = 0;
+        
+        // Int32 needs 4 bytes, only provide 3
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00], &mut index, 'i'),
+            Err(OscParseError::NotEnoughData)
+        );
+
+        // Same as above but with offset index
+        index = 2;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00, 0x00], &mut index, 'i'),
+            Err(OscParseError::NotEnoughData)
+        );
+
+        // Float32 needs 4 bytes, only provide 2
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00], &mut index, 'f'),
+            Err(OscParseError::NotEnoughData)
+        );
+
+        // Int64 needs 8 bytes, only provide 7
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], &mut index, 'h'),
+            Err(OscParseError::NotEnoughData)
+        );
+
+        // Float64 needs 8 bytes, only provide 5
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00, 0x00], &mut index, 'd'),
+            Err(OscParseError::NotEnoughData)
+        );
+
+        // TimeTag needs 8 bytes, only provide 6
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00], &mut index, 't'),
+            Err(OscParseError::NotEnoughData)
+        );
+
+        // ASCII needs 4 bytes, only provide 3
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00], &mut index, 'c'),
+            Err(OscParseError::NotEnoughData)
+        );
+
+        // Colour needs 4 bytes, only provide 2
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00], &mut index, 'r'),
+            Err(OscParseError::NotEnoughData)
+        );
+
+        // MIDI needs 4 bytes, only provide 1
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00], &mut index, 'm'),
+            Err(OscParseError::NotEnoughData)
+        );
     }
 }
