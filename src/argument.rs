@@ -192,6 +192,37 @@ impl OscArgument {
         }
     }
 
+    /// Returns a human-readable string representation of the argument
+    pub fn to_string(&self) -> String {
+        match self {
+            OscArgument::Int32(x) => x.to_string(),
+            OscArgument::Float32(f) => f.to_string(),
+            OscArgument::String(s) => format!("\"{}\"", s),
+            OscArgument::Blob(data) => format!("Blob({} bytes)", data.len()),
+            OscArgument::Int64(i) => i.to_string(),
+            OscArgument::TimeTag(t) => format!("TimeTag({}:{})", t.seconds, t.fractional),
+            OscArgument::Float64(f) => f.to_string(),
+            OscArgument::AlternateType(s) => format!("Alt(\"{}\")", s),
+            OscArgument::AsciiCharacter(c) => {
+                if c.is_ascii_graphic() || *c == b' ' {
+                    format!("'{}'", *c as char)
+                } else {
+                    format!("'\\x{:02x}'", c)
+                }
+            },
+            OscArgument::Colour(c) => format!("rgba({}, {}, {}, {})", c.red, c.green, c.blue, c.alpha),
+            OscArgument::MidiMessage(port, status, data1, data2) => {
+                format!("MIDI(port:{}, status:0x{:02x}, data1:{}, data2:{})", port, status, data1, data2)
+            },
+            OscArgument::True => "true".to_string(),
+            OscArgument::False => "false".to_string(),
+            OscArgument::Nil => "nil".to_string(),
+            OscArgument::Infinitum => "inf".to_string(),
+            OscArgument::ArrayBegin => "[".to_string(),
+            OscArgument::ArrayEnd => "]".to_string(),
+        }
+    }
+
     fn ensure_bytes_available(bytes: &[u8], index: usize, needed: usize) -> Result<(), OscParseError> {
         if index + needed > bytes.len() {
             Err(OscParseError::NotEnoughData)
