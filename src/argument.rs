@@ -1181,6 +1181,51 @@ mod tests {
     }
 
     #[test]
+    fn test_arguments_from_bytes_colour() {
+        // Test all combinations of key values (0, 128, 255) for each channel
+        for r in [0, 128, 255] {
+            for g in [0, 128, 255] {
+                for b in [0, 128, 255] {
+                    for a in [0, 128, 255] {
+                        let mut index = 0;
+                        assert_eq!(
+                            OscArgument::from_bytes(&[r, g, b, a], &mut index, 'r'),
+                            Ok(OscArgument::Colour(OscColour { red: r, green: g, blue: b, alpha: a }))
+                        );
+                        assert_eq!(index, 4);
+                    }
+                }
+            }
+        }
+
+        // Test with non-zero index (simulating sequential parsing)
+        let data = [
+            0xFF, 0xFF, 0xFF, 0xFF,  // junk padding (4 bytes)
+            64, 128, 192, 255,       // color (4 bytes)
+            0xAA, 0xBB, 0xCC, 0xDD,  // more junk after (4 bytes)
+        ];
+        let mut index = 4; // Start after the padding
+        assert_eq!(
+            OscArgument::from_bytes(&data, &mut index, 'r'),
+            Ok(OscArgument::Colour(OscColour { red: 64, green: 128, blue: 192, alpha: 255 }))
+        );
+        assert_eq!(index, 8); // Should advance by 4 bytes (from 4 to 8)
+
+        // Test with different starting index
+        let data2 = [
+            0xAA, 0xBB,              // 2 bytes padding
+            255, 0, 128, 64,         // color (4 bytes)
+            0xCC, 0xDD,              // 2 bytes after
+        ];
+        index = 2;
+        assert_eq!(
+            OscArgument::from_bytes(&data2, &mut index, 'r'),
+            Ok(OscArgument::Colour(OscColour { red: 255, green: 0, blue: 128, alpha: 64 }))
+        );
+        assert_eq!(index, 6); // 2 + 4 = 6
+    }
+
+    #[test]
     fn test_arguments_from_bytes() {
         assert_eq!(OscArgument::from_bytes(&123_i32.to_be_bytes(), &mut 0usize.clone(), 'i'), Ok(OscArgument::Int32(123)));
         assert_eq!(OscArgument::from_bytes(&567.3_f32.to_be_bytes(), &mut 0usize.clone(), 'f'), Ok(OscArgument::Float32(567.3)));
