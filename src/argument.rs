@@ -673,6 +673,93 @@ mod tests {
     }
 
     #[test]
+    fn test_arguments_from_bytes_blob() {
+        // Empty blob
+        let mut index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00], &mut index, 'b'),
+            Ok(OscArgument::Blob(vec![]))
+        );
+        assert_eq!(index, 4); // Just the length field
+
+        // 1-byte blob (3 bytes padding)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x01, 0xFF, 0x00, 0x00, 0x00], &mut index, 'b'),
+            Ok(OscArgument::Blob(vec![0xFF]))
+        );
+        assert_eq!(index, 8); // 4 (length) + 1 (data) + 3 (pad) = 8
+
+        // 2-byte blob (2 bytes padding)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x02, 0xAA, 0xBB, 0x00, 0x00], &mut index, 'b'),
+            Ok(OscArgument::Blob(vec![0xAA, 0xBB]))
+        );
+        assert_eq!(index, 8); // 4 (length) + 2 (data) + 2 (pad) = 8
+
+        // 3-byte blob (1 byte padding)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03, 0x00], &mut index, 'b'),
+            Ok(OscArgument::Blob(vec![0x01, 0x02, 0x03]))
+        );
+        assert_eq!(index, 8); // 4 (length) + 3 (data) + 1 (pad) = 8
+
+        // 4-byte blob (no padding)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x04, 0x01, 0x02, 0x03, 0x04], &mut index, 'b'),
+            Ok(OscArgument::Blob(vec![0x01, 0x02, 0x03, 0x04]))
+        );
+        assert_eq!(index, 8); // 4 (length) + 4 (data) + 0 (pad) = 8
+
+        // 5-byte blob (3 bytes padding)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x05, 0x10, 0x20, 0x30, 0x40, 0x50, 0x00, 0x00, 0x00], &mut index, 'b'),
+            Ok(OscArgument::Blob(vec![0x10, 0x20, 0x30, 0x40, 0x50]))
+        );
+        assert_eq!(index, 12); // 4 (length) + 5 (data) + 3 (pad) = 12
+
+        // 8-byte blob (no padding)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08], &mut index, 'b'),
+            Ok(OscArgument::Blob(vec![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]))
+        );
+        assert_eq!(index, 12); // 4 (length) + 8 (data) + 0 (pad) = 12
+
+        // Test with non-zero index (simulating sequential parsing)
+        let data = [
+            0xFF, 0xFF, 0xFF, 0xFF,  // junk padding (4 bytes)
+            0x00, 0x00, 0x00, 0x02,  // length = 2
+            0xAB, 0xCD, 0x00, 0x00,  // 2 bytes data + 2 pad
+            0xAA, 0xBB, 0xCC, 0xDD,  // more junk after
+        ];
+        index = 4; // Start after the junk padding
+        assert_eq!(
+            OscArgument::from_bytes(&data, &mut index, 'b'),
+            Ok(OscArgument::Blob(vec![0xAB, 0xCD]))
+        );
+        assert_eq!(index, 12); // 4 + 4 (length) + 2 (data) + 2 (pad) = 12
+
+        // Test with different starting index
+        let data2 = [
+            0xAA, 0xBB,              // 2 bytes padding
+            0x00, 0x00, 0x00, 0x03,  // length = 3
+            0x11, 0x22, 0x33, 0x00,  // 3 bytes data + 1 pad
+            0xCC, 0xDD,              // 2 bytes after
+        ];
+        index = 2;
+        assert_eq!(
+            OscArgument::from_bytes(&data2, &mut index, 'b'),
+            Ok(OscArgument::Blob(vec![0x11, 0x22, 0x33]))
+        );
+        assert_eq!(index, 10); // 2 + 4 (length) + 3 (data) + 1 (pad) = 10
+    }
+
+    #[test]
     fn test_arguments_from_bytes() {
         assert_eq!(OscArgument::from_bytes(&123_i32.to_be_bytes(), &mut 0usize.clone(), 'i'), Ok(OscArgument::Int32(123)));
         assert_eq!(OscArgument::from_bytes(&567.3_f32.to_be_bytes(), &mut 0usize.clone(), 'f'), Ok(OscArgument::Float32(567.3)));
