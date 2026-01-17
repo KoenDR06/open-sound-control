@@ -246,7 +246,13 @@ impl OscArgument {
             + start;
         let s = String::from_utf8(bytes[start..end].to_vec())
             .map_err(|_| OscParseError::InvalidString)?;
-        *index = (end + 1 + 3) & !3; // Advance past null and padding
+
+        // Calculate length including null terminator
+        let string_length = end - start + 1; // +1 for null
+        // Pad to next multiple of 4
+        let padded_length = (string_length + 3) & !3;
+        *index = start + padded_length;
+
         Ok(s)
     }
 }
