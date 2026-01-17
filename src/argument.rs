@@ -259,25 +259,33 @@ impl OscArgument {
 mod tests {
     use super::*;
 
+    //----------------------------------------------------------------
+    // Test type tags
     #[test]
     fn test_type_tag() {
-        assert_eq!(OscArgument::Int32(0).type_tag(), 'i');
-        assert_eq!(OscArgument::Float32(0.0).type_tag(), 'f');
-        assert_eq!(OscArgument::String("".to_string()).type_tag(), 's');
-        assert_eq!(OscArgument::Blob(vec![]).type_tag(), 'b');
-        assert_eq!(OscArgument::Int64(0).type_tag(), 'h');
-        assert_eq!(OscArgument::TimeTag(OscTimeTag::from_i64(0)).type_tag(), 't');
-        assert_eq!(OscArgument::Float64(0.0).type_tag(), 'd');
-        assert_eq!(OscArgument::AlternateType("".to_string()).type_tag(), 'S');
-        assert_eq!(OscArgument::AsciiCharacter('a' as u8).type_tag(), 'c');
-        assert_eq!(OscArgument::Colour(OscColour { red: 255, green: 0, blue: 255, alpha: 0 }).type_tag(), 'r');
-        assert_eq!(OscArgument::MidiMessage(0, 0, 0, 0).type_tag(), 'm');
-        assert_eq!(OscArgument::True.type_tag(), 'T');
-        assert_eq!(OscArgument::False.type_tag(), 'F');
-        assert_eq!(OscArgument::Nil.type_tag(), 'N');
-        assert_eq!(OscArgument::Infinitum.type_tag(), 'I');
-        assert_eq!(OscArgument::ArrayBegin.type_tag(), '[');
-        assert_eq!(OscArgument::ArrayEnd.type_tag(), ']');
+        let test_cases = vec![
+            (OscArgument::Int32(0), 'i'),
+            (OscArgument::Float32(0.0), 'f'),
+            (OscArgument::String("".to_string()), 's'),
+            (OscArgument::Blob(vec![]), 'b'),
+            (OscArgument::Int64(0), 'h'),
+            (OscArgument::TimeTag(OscTimeTag::from_i64(0)), 't'),
+            (OscArgument::Float64(0.0), 'd'),
+            (OscArgument::AlternateType("".to_string()), 'S'),
+            (OscArgument::AsciiCharacter(b'a'), 'c'),
+            (OscArgument::Colour(OscColour { red: 255, green: 0, blue: 255, alpha: 0 }), 'r'),
+            (OscArgument::MidiMessage(0, 0, 0, 0), 'm'),
+            (OscArgument::True, 'T'),
+            (OscArgument::False, 'F'),
+            (OscArgument::Nil, 'N'),
+            (OscArgument::Infinitum, 'I'),
+            (OscArgument::ArrayBegin, '['),
+            (OscArgument::ArrayEnd, ']'),
+        ];
+
+        for (arg, expected_tag) in test_cases {
+            assert_eq!(arg.type_tag(), expected_tag, "Failed for {:?}", arg);
+        }
     }
 
     #[test]
