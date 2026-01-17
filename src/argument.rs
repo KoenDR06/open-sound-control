@@ -2,8 +2,6 @@ use crate::helpers;
 use crate::helpers::OscParseError;
 use crate::timetag::OscTimeTag;
 
-
-
 // Represents a colour sent by OSC
 #[derive(Debug, PartialEq)]
 pub struct OscColour {
