@@ -898,6 +898,99 @@ mod tests {
     }
 
     #[test]
+    fn test_arguments_from_bytes_float64() {
+        // Simple case
+        let mut index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&123456789.1234_f64.to_be_bytes(), &mut index, 'd'),
+            Ok(OscArgument::Float64(123456789.1234))
+        );
+        assert_eq!(index, 8);
+
+        // Zero
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&0.0_f64.to_be_bytes(), &mut index, 'd'),
+            Ok(OscArgument::Float64(0.0))
+        );
+        assert_eq!(index, 8);
+
+        // Negative number
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&(-10000.0_f64).to_be_bytes(), &mut index, 'd'),
+            Ok(OscArgument::Float64(-10000.0))
+        );
+        assert_eq!(index, 8);
+
+        // Negative zero
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&(-0.0_f64).to_be_bytes(), &mut index, 'd'),
+            Ok(OscArgument::Float64(-0.0))
+        );
+        assert_eq!(index, 8);
+
+        // Infinity
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&f64::INFINITY.to_be_bytes(), &mut index, 'd'),
+            Ok(OscArgument::Float64(f64::INFINITY))
+        );
+        assert_eq!(index, 8);
+
+        // Negative infinity
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&f64::NEG_INFINITY.to_be_bytes(), &mut index, 'd'),
+            Ok(OscArgument::Float64(f64::NEG_INFINITY))
+        );
+        assert_eq!(index, 8);
+
+        // MAX value
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&f64::MAX.to_be_bytes(), &mut index, 'd'),
+            Ok(OscArgument::Float64(f64::MAX))
+        );
+        assert_eq!(index, 8);
+
+        // MIN value (most negative)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&f64::MIN.to_be_bytes(), &mut index, 'd'),
+            Ok(OscArgument::Float64(f64::MIN))
+        );
+        assert_eq!(index, 8);
+
+        // Test with non-zero index (simulating sequential parsing)
+        let data = [
+            0xFF, 0xFF, 0xFF, 0xFF,  // junk padding (4 bytes)
+            0x40, 0x72, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00,  // 300.0 in big-endian (8 bytes)
+            0xAA, 0xBB, 0xCC, 0xDD,  // more junk after (4 bytes)
+        ];
+        index = 4; // Start after the padding
+        assert_eq!(
+            OscArgument::from_bytes(&data, &mut index, 'd'),
+            Ok(OscArgument::Float64(300.0))
+        );
+        assert_eq!(index, 12); // Should advance by 8 bytes (from 4 to 12)
+
+        // Test with different starting index
+        let data2 = [
+            0xAA, 0xBB,              // 2 bytes padding
+            0xC0, 0x5F, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00,  // -125.0 in big-endian
+            0xCC, 0xDD,              // 2 bytes after
+        ];
+        index = 2;
+        assert_eq!(
+            OscArgument::from_bytes(&data2, &mut index, 'd'),
+            Ok(OscArgument::Float64(-125.0))
+        );
+        assert_eq!(index, 10); // 2 + 8 = 10
+    }
+    
+    #[test]
     fn test_arguments_from_bytes() {
         assert_eq!(OscArgument::from_bytes(&123_i32.to_be_bytes(), &mut 0usize.clone(), 'i'), Ok(OscArgument::Int32(123)));
         assert_eq!(OscArgument::from_bytes(&567.3_f32.to_be_bytes(), &mut 0usize.clone(), 'f'), Ok(OscArgument::Float32(567.3)));
