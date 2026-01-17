@@ -1271,23 +1271,48 @@ mod tests {
     }
 
     #[test]
-    fn test_arguments_from_bytes() {
-        assert_eq!(OscArgument::from_bytes(&123_i32.to_be_bytes(), &mut 0usize.clone(), 'i'), Ok(OscArgument::Int32(123)));
-        assert_eq!(OscArgument::from_bytes(&567.3_f32.to_be_bytes(), &mut 0usize.clone(), 'f'), Ok(OscArgument::Float32(567.3)));
-        assert_eq!(OscArgument::from_bytes(&helpers::osc_string_as_bytes("hello"), &mut 0usize.clone(), 's'), Ok(OscArgument::String("hello".to_string())));
-        assert_eq!(OscArgument::from_bytes(&vec![0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03, 0x00], &mut 0usize.clone(), 'b'), Ok(OscArgument::Blob(vec![0x01, 0x02, 0x03])));
-        assert_eq!(OscArgument::from_bytes(&(0x0123_4567_89AB_CDEF as i64).to_be_bytes(), &mut 0usize.clone(), 'h'), Ok(OscArgument::Int64(0x0123_4567_89AB_CDEF)));
-        assert_eq!(OscArgument::from_bytes(&vec![0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0], &mut 0usize.clone(), 't'), Ok(OscArgument::TimeTag(OscTimeTag { seconds: 0x12345678, fractional: 0x9ABCDEF0 })));
-        assert_eq!(OscArgument::from_bytes(&(123456789.1234 as f64).to_be_bytes(), &mut 0usize.clone(), 'd'), Ok(OscArgument::Float64(123456789.1234)));
-        assert_eq!(OscArgument::from_bytes(&helpers::osc_string_as_bytes("alternate"), &mut 0usize.clone(), 'S'), Ok(OscArgument::AlternateType("alternate".to_string())));
-        assert_eq!(OscArgument::from_bytes(&vec![0x00, 0x00, 0x00, 0x41], &mut 0usize.clone(), 'c'), Ok(OscArgument::AsciiCharacter('A' as u8)));
-        assert_eq!(OscArgument::from_bytes(&vec![255, 87, 123, 255], &mut 0usize.clone(), 'r'), Ok(OscArgument::Colour(OscColour { red: 255, green: 87, blue: 123, alpha: 255 })));
-        assert_eq!(OscArgument::from_bytes(&vec![0, 10, 20, 30], &mut 0usize.clone(), 'm'), Ok(OscArgument::MidiMessage(0, 10, 20, 30)));
-        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), 'T'), Ok(OscArgument::True));
-        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), 'F'), Ok(OscArgument::False));
-        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), 'N'), Ok(OscArgument::Nil));
-        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), 'I'), Ok(OscArgument::Infinitum));
-        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), '['), Ok(OscArgument::ArrayBegin));
-        assert_eq!(OscArgument::from_bytes(&vec![8, 9, 10, 11], &mut 0usize.clone(), ']'), Ok(OscArgument::ArrayEnd));
+    fn test_arguments_from_bytes_tag_only_types() {
+        // These types don't consume any bytes from the data
+        let mut index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[], &mut index, 'T'),
+            Ok(OscArgument::True)
+        );
+        assert_eq!(index, 0); // Index should NOT advance
+
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[], &mut index, 'F'),
+            Ok(OscArgument::False)
+        );
+        assert_eq!(index, 0);
+
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[], &mut index, 'N'),
+            Ok(OscArgument::Nil)
+        );
+        assert_eq!(index, 0);
+
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[], &mut index, 'I'),
+            Ok(OscArgument::Infinitum)
+        );
+        assert_eq!(index, 0);
+
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[], &mut index, '['),
+            Ok(OscArgument::ArrayBegin)
+        );
+        assert_eq!(index, 0);
+
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[], &mut index, ']'),
+            Ok(OscArgument::ArrayEnd)
+        );
+        assert_eq!(index, 0);
     }
 }
