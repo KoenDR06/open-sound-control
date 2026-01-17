@@ -1076,6 +1076,111 @@ mod tests {
     }
     
     #[test]
+    fn test_arguments_from_bytes_ascii() {
+        // Printable ASCII characters
+        let mut index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x41], &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(b'A'))
+        );
+        assert_eq!(index, 4);
+
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x42], &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(b'B'))
+        );
+        assert_eq!(index, 4);
+
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x78], &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(b'x'))
+        );
+        assert_eq!(index, 4);
+
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x7A], &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(b'z'))
+        );
+        assert_eq!(index, 4);
+
+        // Space character
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x20], &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(b' '))
+        );
+        assert_eq!(index, 4);
+
+        // Digit characters
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x30], &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(b'0'))
+        );
+        assert_eq!(index, 4);
+
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x39], &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(b'9'))
+        );
+        assert_eq!(index, 4);
+
+        // Non-printable ASCII (null)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x00], &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(0))
+        );
+        assert_eq!(index, 4);
+
+        // Non-printable ASCII (DEL)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0x7F], &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(127))
+        );
+        assert_eq!(index, 4);
+
+        // Extended ASCII (beyond standard ASCII range)
+        index = 0;
+        assert_eq!(
+            OscArgument::from_bytes(&[0x00, 0x00, 0x00, 0xFF], &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(255))
+        );
+        assert_eq!(index, 4);
+
+        // Test with non-zero index (simulating sequential parsing)
+        let data = [
+            0xFF, 0xFF, 0xFF, 0xFF,  // junk padding (4 bytes)
+            0x00, 0x00, 0x00, 0x4D,  // 'M' character (4 bytes)
+            0xAA, 0xBB, 0xCC, 0xDD,  // more junk after (4 bytes)
+        ];
+        index = 4; // Start after the padding
+        assert_eq!(
+            OscArgument::from_bytes(&data, &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(b'M'))
+        );
+        assert_eq!(index, 8); // Should advance by 4 bytes (from 4 to 8)
+
+        // Test with different starting index
+        let data2 = [
+            0xAA, 0xBB,              // 2 bytes padding
+            0x00, 0x00, 0x00, 0x21,  // '!' character
+            0xCC, 0xDD,              // 2 bytes after
+        ];
+        index = 2;
+        assert_eq!(
+            OscArgument::from_bytes(&data2, &mut index, 'c'),
+            Ok(OscArgument::AsciiCharacter(b'!'))
+        );
+        assert_eq!(index, 6); // 2 + 4 = 6
+    }
+
+    #[test]
     fn test_arguments_from_bytes() {
         assert_eq!(OscArgument::from_bytes(&123_i32.to_be_bytes(), &mut 0usize.clone(), 'i'), Ok(OscArgument::Int32(123)));
         assert_eq!(OscArgument::from_bytes(&567.3_f32.to_be_bytes(), &mut 0usize.clone(), 'f'), Ok(OscArgument::Float32(567.3)));
