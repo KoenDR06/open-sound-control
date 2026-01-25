@@ -212,4 +212,43 @@ mod tests {
       assert_eq!(m2.arguments.get(3), Some(&OscArgument::Float32(1.234)));
       assert_eq!(m2.arguments.get(4), Some(&OscArgument::Float32(5.678)));
     }
+
+    #[test]
+    fn test_empty_arguments() {
+        let msg = OscMessage::new("/test");
+        let bytes = msg.to_bytes();
+        let decoded = OscMessage::from_bytes(&bytes).unwrap();
+        assert_eq!(decoded.address, "/test");
+        assert_eq!(decoded.arguments.len(), 0);
+    }
+
+    #[test]
+    fn test_invalid_address_no_slash() {
+        let bytes = b"invalid\0\0\0\0,\0\0\0";
+        assert!(matches!(
+            OscMessage::from_bytes(bytes),
+            Err(OscParseError::InvalidString)
+        ));
+    }
+
+    #[test]
+    fn test_truncated_message() {
+        let bytes = b"/test\0\0\0,i"; // incomplete
+        assert!(OscMessage::from_bytes(bytes).is_err());
+    }
+
+    #[test]
+    fn test_to_string() {
+        let msg = OscMessage {
+            address: "/example".to_string(),
+            arguments: vec![
+                OscArgument::Int32(42),
+                OscArgument::Float32(3.14),
+                OscArgument::String("hello".to_string()),
+                OscArgument::Blob(vec![0x01, 0x02, 0x03])
+            ],
+        };
+        let msg_str = msg.to_string();
+        assert_eq!(msg_str, "/example 42, 3.14, \"hello\", Blob(3 bytes)");
+    }
 }
