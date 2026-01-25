@@ -47,11 +47,7 @@ impl OscMessage {
     let mut arguments_index: usize = (type_tag_null_pos + 1 + 3) & !3;
 
     for tag in type_tag_string[1..].chars() {
-      let result = OscArgument::from_bytes(bytes, &mut arguments_index, tag);
-      if result.is_err() {
-        return Err(OscParseError::CouldNotParseArguments);
-      }
-      let argument = result.unwrap();
+      let argument = OscArgument::from_bytes(bytes, &mut arguments_index, tag).map_err(|_| OscParseError::CouldNotParseArguments)?;
       arguments.push (argument);
     }
 
@@ -83,7 +79,7 @@ impl OscMessage {
   }
 
   fn arguments_in_bytes(&self) -> Vec<u8> {
-    return self.arguments.iter().flat_map(|a| a.to_bytes()).collect();
+    self.arguments.iter().flat_map(|a| a.to_bytes()).collect()
   }
 }
 
