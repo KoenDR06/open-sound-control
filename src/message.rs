@@ -77,6 +77,7 @@ impl OscMessage {
   fn type_tag_string_in_bytes(&self) -> Vec<u8> {
     let mut bytes: Vec<u8> = vec![b','];
     bytes.extend(self.arguments.iter().map(|a| a.type_tag() as u8));
+    bytes.push(b'\0');
     helpers::pad_to_multiple_of_4_bytes(&mut bytes);
     bytes
   }
