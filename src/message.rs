@@ -60,6 +60,19 @@ impl OscMessage {
     Ok(OscMessage { address: address_pattern, arguments })
   }
 
+  /// Construct an OscMessage from a sequence of bytes
+  pub fn to_string(&self) -> String {
+    let mut result = String::new();
+    result.push_str(&self.address);
+    result.push_str(" ");
+
+    for (i, arg) in self.arguments.iter().enumerate() {
+      result.push_str(&arg.to_string());
+      result.push_str( if i < self.arguments.len() - 1 { ", " } else { "" } );
+    }
+    result
+  }
+
   /// Convert an OscMessage to a vector of bytes
   pub fn to_bytes(&self) -> Vec<u8> {
     [
