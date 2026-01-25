@@ -11,11 +11,17 @@ pub struct OscMessage {
 impl OscMessage {
 
   /// Constructs a new OscMessage with a given address and zero arguments
-  pub fn new(address: String) -> Self {
+  pub fn new(address: impl Into<String>) -> Self {
         Self { 
-          address,
+          address: address.into(),
           arguments: Vec::new()
         }
+  }
+
+  /// Adds an argument to the OscMessage and returns the modified message
+  pub fn with_arg(mut self, arg: OscArgument) -> Self {
+        self.arguments.push(arg);
+        self
   }
 
   /// Construct an OscMessage from a sequence of bytes
@@ -110,7 +116,7 @@ mod tests {
     //------------------------------------------------------------------
     #[test]
     fn test_construct_message2() {
-      let m2 = OscMessage::new("/nice".to_string());
+      let m2 = OscMessage::new("/nice");
 
       assert_eq!(m2.address, "/nice");
       assert_eq!(m2.arguments.len(), 0);
