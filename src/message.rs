@@ -132,7 +132,7 @@ mod tests {
         ]
       };
 
-      let mut bytes = m1.to_bytes();
+      let bytes = m1.to_bytes();
 
       let expected_bytes: Vec<u8> = vec![
           0x2f, 0x6f, 0x73, 0x63,
@@ -147,7 +147,7 @@ mod tests {
 
       assert_eq!(bytes, expected_bytes);
 
-      let result = OscMessage::from_bytes(&mut bytes);
+      let result = OscMessage::from_bytes(&bytes);
       assert!(result.is_ok(), "Expected OscMessage ok, got: {:?}", result.err());
 
       let m2 = result.unwrap();
@@ -170,7 +170,7 @@ mod tests {
         ]
       };
 
-      let mut bytes = m1.to_bytes();
+      let bytes = m1.to_bytes();
 
       let expected_bytes: Vec<u8> = vec![
           0x2f, 0x66, 0x6f, 0x6f,
@@ -187,7 +187,7 @@ mod tests {
 
       assert_eq!(bytes, expected_bytes);
 
-      let result = OscMessage::from_bytes(&mut bytes);
+      let result = OscMessage::from_bytes(&bytes);
       assert!(result.is_ok(), "Expected OscMessage ok, got: {:?}", result.err());
 
       let m2 = result.unwrap();
