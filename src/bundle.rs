@@ -2,7 +2,7 @@ use crate::message::OscMessage;
 use crate::timetag::OscTimeTag;
 use crate::helpers::{self, OscParseError, osc_string_as_bytes};
 
-// Represents an OSC Bundle
+/// Represents an OSC Bundle
 pub struct OscBundle {
     pub messages: Vec<OscMessage>,
     pub time_tag: OscTimeTag

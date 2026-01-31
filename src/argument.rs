@@ -12,6 +12,7 @@ pub struct OscColour {
 }
 
 /// Represents an OSC argument with a given type
+/// 
 /// 17 types are recognised: 
 /// - 4 "main" argument types
 /// - 13 "nonstandard" types (often not used by other OSC implementations)

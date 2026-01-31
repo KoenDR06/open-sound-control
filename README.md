@@ -1,7 +1,8 @@
 # Open Sound Control
 
 <!-- Version and License Badges -->
-![Version](https://img.shields.io/badge/version-0.1.0-green.svg?style=flat-square)
+
+![Version](https://img.shields.io/badge/version-0.9.0-green.svg?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 ![Language](https://img.shields.io/badge/language-Rust-yellow.svg?style=flat-square)
 
@@ -13,7 +14,7 @@ Add `open-sound-control` to your project's Cargo.toml:
 
 ```
 [dependencies]
-open-sound-control = "0.1.0"
+open-sound-control = "0.9.0"
 ```
 
 then run:
@@ -37,7 +38,7 @@ use open_sound_control::*;
 let sender = OscSender::new("127.0.0.1".to_string(), 9000);
 
 //--------------------------------------------------------------
-// Send an OSC Message 
+// Send an OSC Message
 
 let m1 = OscMessage {
   address: String::from("/hello"),
