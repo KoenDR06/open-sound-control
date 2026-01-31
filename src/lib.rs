@@ -2,18 +2,33 @@
 //!
 //! Find the code repository at: https://github.com/adamstark/open-sound-control
 
+/// Represents an OSC Argument
 pub mod argument;
+
+/// Represents an OSC Message
 pub mod message;
+
+/// Represents an OSC Bundle
 pub mod bundle;
+
+/// Represents an OSC Time Tag
 pub mod timetag;
+
+/// Send OSC messages and bundles over UDP
 pub mod sender;
+
+/// Receive OSC messages and bundles over UDP
 pub mod receiver;
+
+/// Helper functions and types for parsing OSC data
 mod helpers;
 
-pub use timetag::OscTimeTag;
-pub use argument::OscArgument;
-pub use message::OscMessage;
-pub use bundle::OscBundle;
-pub use sender::OscSender;
-pub use receiver::OscReceiver;
-pub use receiver::OscPacket;
+#[doc(inline)]
+pub use {
+    timetag::OscTimeTag,
+    argument::OscArgument,
+    message::OscMessage,
+    bundle::OscBundle,
+    sender::OscSender,
+    receiver::{OscReceiver, OscPacket},
+};
