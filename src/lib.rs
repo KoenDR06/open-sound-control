@@ -1,3 +1,7 @@
+//! **open-sound-control** is an Open Sound Control (OSC) protocol implementation in Rust.
+//!
+//! Find the code repository at: https://github.com/adamstark/open-sound-control
+
 pub mod argument;
 pub mod message;
 pub mod bundle;
