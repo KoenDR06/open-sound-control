@@ -105,7 +105,7 @@ impl OscArgument {
       }
     }
 
-    // Returns an OscArgument given a sequence of bytes, an index and a typetag
+    /// Returns an OscArgument given a sequence of bytes, an index and a typetag
     pub fn from_bytes(bytes: &[u8], index: &mut usize, typetag: char) -> Result<Self, OscParseError> {
         match typetag {
             // Int32
