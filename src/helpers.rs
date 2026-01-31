@@ -17,6 +17,7 @@ pub fn pad_to_multiple_of_4_bytes(bytes: &mut Vec<u8>) {
     }
 }
 
+/// Converts a &str to a Vec<u8> padded to a multiple of 4 bytes with null terminators
 #[allow(dead_code)]
 pub fn osc_string_as_bytes(s: &str) -> Vec<u8> {
     let mut v = s.as_bytes().to_vec();
@@ -25,6 +26,7 @@ pub fn osc_string_as_bytes(s: &str) -> Vec<u8> {
     v
 }
 
+/// Checks if the given byte slice represents an OSC Bundle
 pub fn is_bundle(bytes: &[u8]) -> bool {
     
     // Minimum 20 bytes: 8 bytes for bundle, 8 bytes for timetag, 4 bytes for first message size
