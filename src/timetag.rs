@@ -18,6 +18,7 @@ pub struct OscTimeTag {
 
 impl OscTimeTag {
 
+    /// Constructs an OscTimeTag representing the current time
     pub fn now() -> Self {
         let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time calculation error");
 
@@ -32,6 +33,7 @@ impl OscTimeTag {
         }
     }
 
+    /// Converts the OscTimeTag to a sequence of bytes
     pub fn to_bytes(&self) -> [u8; 8] {
         let mut bytes = [0u8; 8];
         bytes[..4].copy_from_slice(&self.seconds.to_be_bytes());
@@ -39,6 +41,7 @@ impl OscTimeTag {
         bytes
     }
 
+    /// Constructs an OscTimeTag from a i64 value
     pub fn from_i64(value: i64) -> Self {
         let uvalue = value as u64; // interpret bits as unsigned
         let seconds = (uvalue >> 32) as u32;
@@ -46,6 +49,7 @@ impl OscTimeTag {
         Self { seconds, fractional }
     }
 
+    /// Constructs an OscTimeTag from a sequence of bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, OscParseError> {
         if bytes.len() < 8 {
             return Err(OscParseError::NotEnoughData);
