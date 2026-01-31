@@ -54,10 +54,6 @@ impl OscTimeTag {
         let fractional = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
         Ok(Self { seconds, fractional })
     }
-
-    pub fn is_immediately(&self) -> bool {
-        self.seconds == 0 && self.fractional == 1
-    }
 }
 
 //==================================================================
@@ -78,6 +74,7 @@ mod tests {
       assert_eq!(tag.fractional, 0x55667788);
 
       let immediately_tag = OscTimeTag { seconds: 0, fractional: 1 };
-      assert!(immediately_tag.is_immediately());
+      assert_eq!(immediately_tag.seconds, 0);
+      assert_eq!(immediately_tag.fractional, 1);
     }
 }
