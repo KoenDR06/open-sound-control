@@ -2,6 +2,7 @@ use std::net::UdpSocket;
 use crate::message::OscMessage;
 use crate::bundle::OscBundle;
 
+/// Struct for sending OSC messages and bundles over UDP
 pub struct OscSender {
   socket: UdpSocket,
   destination: String
@@ -17,10 +18,12 @@ impl OscSender {
       }
   }
 
+  /// Sends an OSC Message to the destination
   pub fn send_message(&self, message: &OscMessage) {
       self.socket.send_to(&message.to_bytes(), &self.destination).expect("Failed to send message");
   }
 
+  /// Sends an OSC Bundle to the destination
   pub fn send_bundle(&self, bundle: &OscBundle) {
       self.socket.send_to(&bundle.to_bytes(), &self.destination).expect("Failed to send message");
   }
