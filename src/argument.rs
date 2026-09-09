@@ -233,7 +233,7 @@ impl OscArgument {
     fn read_be_bytes<const N: usize, T, F>( bytes: &[u8], index: &mut usize, f: F,) -> Result<T, OscParseError> where F: Fn([u8; N]) -> T,
     {
         Self::ensure_bytes_available(bytes, *index, N)?;
-        let raw: [u8; N] = bytes[*index..*index + N].try_into().unwrap();
+        let raw: [u8; N] = bytes[*index..*index + N].try_into().map_err(|it| OscParseError::InvalidString)?;
         *index += N;
         Ok(f(raw))
     }

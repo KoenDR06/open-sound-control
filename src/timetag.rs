@@ -56,8 +56,16 @@ impl OscTimeTag {
         if bytes.len() < 8 {
             return Err(OscParseError::NotEnoughData);
         }
-        let seconds = u32::from_be_bytes(bytes[..4].try_into().unwrap());
-        let fractional = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
+        let seconds = u32::from_be_bytes(
+            bytes[..4]
+            .try_into()
+            .map_err(|_| OscParseError::InvalidString)?
+        );
+        let fractional = u32::from_be_bytes(
+            bytes[4..8]
+            .try_into()
+            .map_err(|_| OscParseError::InvalidString)?
+        );
         Ok(Self { seconds, fractional })
     }
 }

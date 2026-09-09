@@ -24,11 +24,10 @@ impl OscReceiver {
   /// Constructs a new OscReceiver listening on the given port
   pub fn new(port: u32) -> Result<Self, OscNetworkError> {
     let addr = format!("0.0.0.0:{}", port);
-    let socket = UdpSocket::bind(addr);
-    if socket.is_err() {
-      return Err(OscNetworkError::CouldNotBindToSocket);
-    }
-    Ok (OscReceiver { socket: socket.unwrap() })
+    let socket = UdpSocket::bind(addr)
+      .map_err(|it| OscNetworkError::CouldNotBindToSocket)?;
+
+    Ok (OscReceiver { socket })
   }
 
   /// Receives OSC Messages or Bundles from the UDP socket

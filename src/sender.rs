@@ -1,3 +1,4 @@
+use std::io;
 use std::net::UdpSocket;
 use crate::message::OscMessage;
 use crate::bundle::OscBundle;
@@ -11,20 +12,24 @@ pub struct OscSender {
 impl OscSender {
 
   /// Constructs a new OscSender with a given destination ip address and send port
-  pub fn new(ip_address: String, port: u32) -> Self {
-      Self { 
-        socket: UdpSocket::bind("127.0.0.1:0").expect("Failed to bind socket"),
+  pub fn new(ip_address: String, port: u32) -> Result<Self, io::Error> {
+      Ok(Self { 
+        socket: UdpSocket::bind("127.0.0.1:0")?,
         destination: format!("{}:{}", ip_address, port),
-      }
+      })
   }
 
   /// Sends an OSC Message to the destination
-  pub fn send_message(&self, message: &OscMessage) {
-      self.socket.send_to(&message.to_bytes(), &self.destination).expect("Failed to send message");
+  pub fn send_message(&self, message: &OscMessage) -> Result<(), io::Error> {
+      self.socket.send_to(&message.to_bytes(), &self.destination)?;
+
+      Ok(())
   }
 
   /// Sends an OSC Bundle to the destination
-  pub fn send_bundle(&self, bundle: &OscBundle) {
-      self.socket.send_to(&bundle.to_bytes(), &self.destination).expect("Failed to send message");
+  pub fn send_bundle(&self, bundle: &OscBundle) -> Result<(), io::Error> {
+      self.socket.send_to(&bundle.to_bytes(), &self.destination)?;
+
+      Ok(())
   }
 }

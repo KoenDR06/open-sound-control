@@ -24,7 +24,7 @@ impl OscBundle {
 
     while offset < bytes.len() {
         let size_bytes = bytes.get(offset..offset + 4).ok_or(OscParseError::NotEnoughData)?;
-        let message_size = u32::from_be_bytes(size_bytes.try_into().unwrap()) as usize;
+        let message_size = u32::from_be_bytes(size_bytes.try_into().map_err(|it| OscParseError::InvalidString)?) as usize;
         offset += 4;
 
         // check we have enough bytes for the message

@@ -1,7 +1,7 @@
 use open_sound_control::*;
 
 fn main() {
-    let sender = OscSender::new("127.0.0.1".to_string(), 9000);
+    let sender = OscSender::new("127.0.0.1".to_string(), 9000).unwrap();
     
     //--------------------------------------------------------------
     // Send an OSC Message 
@@ -14,7 +14,7 @@ fn main() {
       ]
     };
 
-    sender.send_message (&m1);
+    sender.send_message (&m1).unwrap();
 
 
     //--------------------------------------------------------------
@@ -40,5 +40,5 @@ fn main() {
       messages: vec![m2, m3]
     };
 
-    sender.send_bundle (&b1);
+    sender.send_bundle (&b1).unwrap();
 }
