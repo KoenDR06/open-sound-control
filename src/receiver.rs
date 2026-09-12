@@ -25,7 +25,7 @@ impl OscReceiver {
   pub fn new(port: u32) -> Result<Self, OscNetworkError> {
     let addr = format!("0.0.0.0:{}", port);
     let socket = UdpSocket::bind(addr)
-      .map_err(|it| OscNetworkError::CouldNotBindToSocket)?;
+      .map_err(|_| OscNetworkError::CouldNotBindToSocket)?;
 
     Ok (OscReceiver { socket })
   }
